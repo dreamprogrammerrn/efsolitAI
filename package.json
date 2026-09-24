@@ -7,7 +7,8 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "ios:clean": "rm -rf ~/Library/Developer/Xcode/DerivedData/efsolitai-* && cd ios && xcodebuild -workspace efsolitai.xcworkspace -scheme efsolitai -configuration Debug -sdk iphonesimulator clean && cd .. && npx react-native run-ios"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",
@@ -22,6 +23,7 @@
     "react-native-safe-area-context": "^5.9.1",
     "react-native-screens": "^4.27.0",
     "react-native-vector-icons": "^10.3.0",
+    "react-native-webview": "^14.0.1",
     "react-redux": "^9.3.0"
   },
   "devDependencies": {
