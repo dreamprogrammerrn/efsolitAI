@@ -252,20 +252,30 @@ const SplashScreen = ({ navigation }: any) => {
       }),
     ]).start();
 
-    const checkAuth = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('user');
-        if (userData) {
-          const parsed = JSON.parse(userData);
-          store.dispatch(authSlice.actions.setUser(parsed));
-          setTimeout(() => navigation.replace('Dashboard'), 500);
-        } else {
-          setTimeout(() => navigation.replace('Onboarding'), 500);
-        }
-      } catch (error) {
-        setTimeout(() => navigation.replace('Onboarding'), 500);
-      }
-    };
+   const checkAuth = async () => {
+  const SPLASH_TIMEOUT = 2000; // 2 seconds
+
+  try {
+    const userData = await AsyncStorage.getItem('user');
+
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      store.dispatch(authSlice.actions.setUser(parsed));
+
+      setTimeout(() => {
+        navigation.replace('Dashboard');
+      }, SPLASH_TIMEOUT);
+    } else {
+      setTimeout(() => {
+        navigation.replace('Onboarding');
+      }, SPLASH_TIMEOUT);
+    }
+  } catch (error) {
+    setTimeout(() => {
+      navigation.replace('Onboarding');
+    }, SPLASH_TIMEOUT);
+  }
+};
 
     checkAuth();
   }, []);
@@ -276,7 +286,8 @@ const SplashScreen = ({ navigation }: any) => {
         styles.splashContent,
         { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }
       ]}>
-        <Text style={styles.splashLogo}>🤖</Text>
+        {/* <Text style={styles.splashLogo}>🤖</Text> */}
+        <Image source={require('./src/assets/efsolit.png')} style={{height:60,width:60,borderRadius:25}}/>
         <Text style={styles.splashTitle}>Efsolit AI</Text>
         <Text style={styles.splashSubtitle}>AI-Powered Lead Outreach</Text>
         <Text style={styles.splashTagline}>Automate. Personalize. Convert.</Text>
