@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  SafeAreaView,
+ 
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -26,12 +26,15 @@ import {
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import WebViewScreen from './src/screens/WebViewScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
+import ForgotPassword from './src/screens/ForgotPassword';
+import { Eye, EyeOff } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -263,16 +266,16 @@ const SplashScreen = ({ navigation }: any) => {
       store.dispatch(authSlice.actions.setUser(parsed));
 
       setTimeout(() => {
-        navigation.replace('Dashboard');
+        navigation.replace('WebView');
       }, SPLASH_TIMEOUT);
     } else {
       setTimeout(() => {
-        navigation.replace('Onboarding');
+        navigation.replace('WebView');
       }, SPLASH_TIMEOUT);
     }
   } catch (error) {
     setTimeout(() => {
-      navigation.replace('Onboarding');
+      navigation.replace('WebView');
     }, SPLASH_TIMEOUT);
   }
 };
@@ -326,14 +329,14 @@ const OnboardingScreen = ({ navigation }: any) => {
     if (currentIndex < onboardingSlides.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
     } else {
-      Alert.alert("We are working....","Coming Soon..");
-      // navigation.replace('Login');
+      // Alert.alert("We are working....","Coming Soon..");
+      navigation.replace('Login');
     }
   };
 
   const handleSkip = () => {
-  Alert.alert("We are working....","Coming Soon..");
-    // navigation.replace('Login');
+  // Alert.alert("We are working....","Coming Soon..");
+    navigation.replace('Login');
   };
 
   return (
@@ -419,7 +422,8 @@ const LoginScreen = ({ navigation }: any) => {
         >
           <ScrollView contentContainerStyle={styles.authContainer}>
             <View style={styles.authHeader}>
-              <Text style={styles.authLogo}>🤖</Text>
+              {/* <Text style={styles.authLogo}>🤖</Text> */}
+               <Image source={require('./src/assets/efsolit.png')} style={{height:60,width:60,borderRadius:25}}/>
               <Text style={styles.authTitle}>Welcome Back</Text>
               <Text style={styles.authSubtitle}>Sign in to your Efsolit AI account</Text>
             </View>
@@ -449,11 +453,15 @@ const LoginScreen = ({ navigation }: any) => {
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                        {showPassword ? (
+    <Eye size={22} color="#666" />
+  ) : (
+    <EyeOff size={22} color="#666" />
+  )}
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity style={styles.forgotPassword}>
+              <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate('ForgotPassword')}>
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
             </View>
@@ -497,7 +505,8 @@ const RegisterScreen = ({ navigation }: any) => {
   });
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.auth);
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const handleRegister = async () => {
     if (!formData.name || !formData.email || !formData.password) {
       Alert.alert('Error', 'Please fill all fields');
@@ -526,7 +535,8 @@ const RegisterScreen = ({ navigation }: any) => {
         >
           <ScrollView contentContainerStyle={styles.authContainer}>
             <View style={styles.authHeader}>
-              <Text style={styles.authLogo}>🤖</Text>
+              {/* <Text style={styles.authLogo}>🤖</Text> */}
+               <Image source={require('./src/assets/efsolit.png')} style={{height:60,width:60,borderRadius:25}}/>
               <Text style={styles.authTitle}>Create Account</Text>
               <Text style={styles.authSubtitle}>Get started with Efsolit AI</Text>
             </View>
@@ -575,8 +585,16 @@ const RegisterScreen = ({ navigation }: any) => {
                   placeholderTextColor="#94A3B8"
                   value={formData.password}
                   onChangeText={(text) => setFormData({ ...formData, password: text })}
-                  secureTextEntry
+                
+                  secureTextEntry={!showPassword}
                 />
+                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                     {showPassword ? (
+    <Eye size={22} color="#666" />
+  ) : (
+    <EyeOff size={22} color="#666" />
+  )}
+                </TouchableOpacity>
               </View>
 
               <View style={styles.inputWrapper}>
@@ -587,8 +605,15 @@ const RegisterScreen = ({ navigation }: any) => {
                   placeholderTextColor="#94A3B8"
                   value={formData.confirmPassword}
                   onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
-                  secureTextEntry
+                secureTextEntry={!confirmPasswordVisible}
                 />
+                 <TouchableOpacity onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)} style={styles.eyeButton}>
+                                   {confirmPasswordVisible ? (
+    <Eye size={22} color="#666" />
+  ) : (
+    <EyeOff size={22} color="#666" />
+  )}
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -618,119 +643,6 @@ const RegisterScreen = ({ navigation }: any) => {
   );
 };
 
-// 5. DASHBOARD SCREEN
-// const DashboardScreen = ({ navigation }: any) => {
-//   const dispatch = useAppDispatch();
-//   const { user } = useAppSelector((state) => state.auth);
-//   const { stats, isLoading } = useAppSelector((state) => state.dashboard);
-
-//   useEffect(() => {
-//     dispatch(fetchDashboardData());
-//   }, []);
-
-//   const handleLogout = () => {
-//     Alert.alert(
-//       'Logout',
-//       'Are you sure you want to logout?',
-//       [
-//         { text: 'Cancel', style: 'cancel' },
-//         { 
-//           text: 'Logout', 
-//           style: 'destructive',
-//           onPress: () => {
-//             dispatch(authSlice.actions.logout());
-//             navigation.replace('Login');
-//           }
-//         },
-//       ]
-//     );
-//   };
-
-//   const statsData = [
-//     { label: 'Total Leads', value: stats.leads, icon: '👥', color: '#4F46E5' },
-//     { label: 'Meetings', value: stats.meetings, icon: '📅', color: '#7C3AED' },
-//     { label: 'Replies', value: stats.replies, icon: '✉️', color: '#06B6D4' },
-//     { label: 'Conversion', value: `${stats.conversion}%`, icon: '📈', color: '#10B981' },
-//   ];
-
-//   const quickActions = [
-//     { icon: '📤', label: 'Upload Leads' },
-//     { icon: '✉️', label: 'Send Outreach' },
-//     { icon: '📊', label: 'Analytics' },
-//     { icon: '⚙️', label: 'Settings' },
-//   ];
-
-//   return (
-//     <SafeAreaView style={styles.container}>
-//       <View style={[styles.dashboardHeader, { backgroundColor: '#4F46E5' }]}>
-//         <View style={styles.headerContent}>
-//           <View>
-//             <Text style={styles.welcomeText}>Welcome back,</Text>
-//             <Text style={styles.userName}>{user?.name || 'User'}</Text>
-//           </View>
-//           <View style={styles.headerRight}>
-//             <TouchableOpacity style={styles.notificationButton}>
-//               <Text style={styles.notificationIcon}>🔔</Text>
-//             </TouchableOpacity>
-//             <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-//               <Text style={styles.logoutText}>Logout</Text>
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       </View>
-
-//       <ScrollView style={styles.dashboardContent} showsVerticalScrollIndicator={false}>
-//         <View style={styles.statsGrid}>
-//           {statsData.map((stat, index) => (
-//             <View key={index} style={[styles.statCard, { borderTopColor: stat.color }]}>
-//               <Text style={styles.statIcon}>{stat.icon}</Text>
-//               <Text style={styles.statValue}>{stat.value}</Text>
-//               <Text style={styles.statLabel}>{stat.label}</Text>
-//             </View>
-//           ))}
-//         </View>
-
-//         <View style={styles.section}>
-//           <Text style={styles.sectionTitle}>Quick Actions</Text>
-//           <View style={styles.actionGrid}>
-//             {quickActions.map((action, index) => (
-//               <TouchableOpacity
-//                 key={index}
-//                 style={styles.actionButton}
-//                 onPress={() => Alert.alert(action.label, 'Feature coming soon!')}
-//               >
-//                 <Text style={styles.actionIcon}>{action.icon}</Text>
-//                 <Text style={styles.actionText}>{action.label}</Text>
-//               </TouchableOpacity>
-//             ))}
-//           </View>
-//         </View>
-
-//         <View style={styles.section}>
-//           <Text style={styles.sectionTitle}>AI-Powered Features</Text>
-//           <View style={[styles.featureCard, { backgroundColor: '#F0F4FF' }]}>
-//             <Text style={styles.featureTitle}>🤖 Auto-Schedule Meetings</Text>
-//             <Text style={styles.featureDescription}>
-//               AI reads replies and schedules Google Meet automatically
-//             </Text>
-//             <View style={[styles.featureTag, { backgroundColor: '#4F46E5' }]}>
-//               <Text style={styles.featureTagText}>Coming Soon</Text>
-//             </View>
-//           </View>
-//           <View style={[styles.featureCard, { backgroundColor: '#FFF4F0' }]}>
-//             <Text style={styles.featureTitle}>📧 Personalized Emails</Text>
-//             <Text style={styles.featureDescription}>
-//               AI generates personalized outreach emails for each lead
-//             </Text>
-//             <View style={[styles.featureTag, { backgroundColor: '#FF6B6B' }]}>
-//               <Text style={styles.featureTagText}>Active</Text>
-//             </View>
-//           </View>
-//         </View>
-//       </ScrollView>
-//     </SafeAreaView>
-//   );
-// };
 
 // ==================== NAVIGATION ====================
 const Stack = createNativeStackNavigator();
@@ -740,6 +652,7 @@ const AppNavigator = () => {
     <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
 
@@ -767,7 +680,7 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8FAFC',marginTop:30
   },
   keyboardView: {
     flex: 1,
