@@ -5,204 +5,27 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import {
- 
-  ScrollView,
+
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   ActivityIndicator,
   Dimensions,
   FlatList,
-  Alert,
-  KeyboardAvoidingView,
   Platform,
   Animated,
-  TouchableWithoutFeedback,
-  Keyboard,
   Image,
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { Provider, useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import WebViewScreen from './src/screens/WebViewScreen';
-import DashboardScreen from './src/screens/DashboardScreen';
-import ForgotPassword from './src/screens/ForgotPassword';
-import { Eye, EyeOff } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
-
-// ==================== API CONFIGURATION ====================
-const API_BASE_URL = 'https://api.efsolitai.in'; // Replace with actual API
-
-// ==================== API SERVICES ====================
-const apiService = {
-  login: async (email: string, password: string) => {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!response.ok) throw new Error('Login failed');
-    return response.json();
-  },
-
-  register: async (userData: any) => {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
-    });
-    if (!response.ok) throw new Error('Registration failed');
-    return response.json();
-  },
-
-  getDashboardData: async (token: string) => {
-    const response = await fetch(`${API_BASE_URL}/dashboard`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!response.ok) throw new Error('Failed to fetch dashboard');
-    return response.json();
-  },
-};
-
-// ==================== REDUX SLICES ====================
-const authSlice = createSlice({
-  name: 'auth',
-  initialState: {
-    user: null,
-    token: null,
-    isLoading: false,
-    error: null,
-    isAuthenticated: false,
-  },
-  reducers: {
-    setUser: (state, action) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.isAuthenticated = true;
-      AsyncStorage.setItem('user', JSON.stringify(action.payload));
-    },
-    logout: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
-      AsyncStorage.removeItem('user');
-    },
-    setLoading: (state, action) => {
-      state.isLoading = action.payload;
-    },
-    setError: (state, action) => {
-      state.error = action.payload;
-    },
-  },
-});
-
-const dashboardSlice = createSlice({
-  name: 'dashboard',
-  initialState: {
-    data: null,
-    isLoading: false,
-    error: null,
-    stats: {
-      leads: 0,
-      meetings: 0,
-      replies: 0,
-      conversion: 0,
-    },
-    recentActivity: [],
-  },
-  reducers: {
-    setDashboardData: (state, action) => {
-      state.data = action.payload;
-      state.stats = action.payload.stats || state.stats;
-      state.recentActivity = action.payload.recentActivity || [];
-    },
-    setLoading: (state, action) => {
-      state.isLoading = action.payload;
-    },
-    setError: (state, action) => {
-      state.error = action.payload;
-    },
-  },
-});
-
-// ==================== ASYNC THUNKS ====================
-export const loginUser = createAsyncThunk(
-  'auth/loginUser',
-  async ({ email, password }: { email: string; password: string }, { dispatch }) => {
-    try {
-      dispatch(authSlice.actions.setLoading(true));
-      const response = await apiService.login(email, password);
-      dispatch(authSlice.actions.setUser({ user: response.user, token: response.token }));
-      dispatch(authSlice.actions.setLoading(false));
-      return response;
-    } catch (error: any) {
-      dispatch(authSlice.actions.setError(error.message));
-      dispatch(authSlice.actions.setLoading(false));
-      throw error;
-    }
-  }
-);
-
-export const registerUser = createAsyncThunk(
-  'auth/registerUser',
-  async (userData: any, { dispatch }) => {
-    try {
-      dispatch(authSlice.actions.setLoading(true));
-      const response = await apiService.register(userData);
-      dispatch(authSlice.actions.setUser({ user: response.user, token: response.token }));
-      dispatch(authSlice.actions.setLoading(false));
-      return response;
-    } catch (error: any) {
-      dispatch(authSlice.actions.setError(error.message));
-      dispatch(authSlice.actions.setLoading(false));
-      throw error;
-    }
-  }
-);
-
-export const fetchDashboardData = createAsyncThunk(
-  'dashboard/fetchData',
-  async (_, { getState, dispatch }) => {
-    try {
-      dispatch(dashboardSlice.actions.setLoading(true));
-      const { auth } = getState() as RootState;
-      if (!auth.token) throw new Error('No token available');
-      
-      const response = await apiService.getDashboardData(auth.token);
-      dispatch(dashboardSlice.actions.setDashboardData(response));
-      dispatch(dashboardSlice.actions.setLoading(false));
-      return response;
-    } catch (error: any) {
-      dispatch(dashboardSlice.actions.setError(error.message));
-      dispatch(dashboardSlice.actions.setLoading(false));
-      throw error;
-    }
-  }
-);
-
-// ==================== STORE CONFIGURATION ====================
-const store = configureStore({
-  reducer: {
-    auth: authSlice.reducer,
-    dashboard: dashboardSlice.reducer,
-  },
-});
-
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
-
-export const useAppDispatch = () => useDispatch<AppDispatch>();
-export const useAppSelector = <T,>(selector: (state: RootState) => T) => useSelector(selector);
 
 // ==================== ONBOARDING DATA ====================
 const onboardingSlides = [
@@ -255,28 +78,27 @@ const SplashScreen = ({ navigation }: any) => {
       }),
     ]).start();
 
-   const checkAuth = async () => {
-  const SPLASH_TIMEOUT = 2000; // 2 seconds
+const checkAuth = async () => {
+  const SPLASH_TIMEOUT = 2000;
 
   try {
-    const userData = await AsyncStorage.getItem('user');
+    const onboardingDone = await AsyncStorage.getItem('onboardingDone');
 
-    if (userData) {
-      const parsed = JSON.parse(userData);
-      store.dispatch(authSlice.actions.setUser(parsed));
-
+    if (onboardingDone === 'true') {
+      // Onboarding completed → Dashboard/WebView
       setTimeout(() => {
         navigation.replace('WebView');
       }, SPLASH_TIMEOUT);
     } else {
+      // First time → Onboarding
       setTimeout(() => {
-        navigation.replace('WebView');
+        navigation.replace('Onboarding');
       }, SPLASH_TIMEOUT);
     }
   } catch (error) {
-    setTimeout(() => {
-      navigation.replace('WebView');
-    }, SPLASH_TIMEOUT);
+    console.log('checkAuth error:', error);
+
+    navigation.replace('Onboarding');
   }
 };
 
@@ -302,6 +124,15 @@ const SplashScreen = ({ navigation }: any) => {
 
 // 2. ONBOARDING SCREEN
 const OnboardingScreen = ({ navigation }: any) => {
+
+  const completeOnboarding = async () => {
+  try {
+    await AsyncStorage.setItem('onboardingDone', 'true');
+    navigation.replace('WebView'); // Dashboard
+  } catch (error) {
+    console.log('Error saving onboarding status:', error);
+  }
+};
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -330,13 +161,14 @@ const OnboardingScreen = ({ navigation }: any) => {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
     } else {
       // Alert.alert("We are working....","Coming Soon..");
-      navigation.replace('Login');
+      completeOnboarding();
     }
   };
 
   const handleSkip = () => {
   // Alert.alert("We are working....","Coming Soon..");
-    navigation.replace('Login');
+    // navigation.replace('Login');
+    completeOnboarding();
   };
 
   return (
@@ -391,257 +223,8 @@ const OnboardingScreen = ({ navigation }: any) => {
   );
 };
 
-// 3. LOGIN SCREEN
-const LoginScreen = ({ navigation }: any) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const dispatch = useAppDispatch();
-  const { isLoading, error } = useAppSelector((state) => state.auth);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill all fields');
-      return;
-    }
 
-    try {
-      await dispatch(loginUser({ email, password })).unwrap();
-      navigation.replace('Dashboard');
-    } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Invalid credentials');
-    }
-  };
-
-  return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-        >
-          <ScrollView contentContainerStyle={styles.authContainer}>
-            <View style={styles.authHeader}>
-              {/* <Text style={styles.authLogo}>🤖</Text> */}
-               <Image source={require('./src/assets/efsolit.png')} style={{height:60,width:60,borderRadius:25}}/>
-              <Text style={styles.authTitle}>Welcome Back</Text>
-              <Text style={styles.authSubtitle}>Sign in to your Efsolit AI account</Text>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>✉️</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email Address"
-                  placeholderTextColor="#94A3B8"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🔒</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor="#94A3B8"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                        {showPassword ? (
-    <Eye size={22} color="#666" />
-  ) : (
-    <EyeOff size={22} color="#666" />
-  )}
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate('ForgotPassword')}>
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-            </View>
-
-            {error && <Text style={styles.errorText}>{error}</Text>}
-
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: '#4F46E5' }]}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
-              )}
-            </TouchableOpacity>
-
-    
-          
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.linkText}>
-                Don't have an account? <Text style={styles.link}>Sign Up</Text>
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
-  );
-};
-
-// 4. REGISTER SCREEN
-const RegisterScreen = ({ navigation }: any) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    company: '',
-  });
-  const dispatch = useAppDispatch();
-  const { isLoading, error } = useAppSelector((state) => state.auth);
-  const [showPassword, setShowPassword] = useState(false);
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
-  const handleRegister = async () => {
-    if (!formData.name || !formData.email || !formData.password) {
-      Alert.alert('Error', 'Please fill all fields');
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    try {
-      await dispatch(registerUser(formData)).unwrap();
-      navigation.replace('Dashboard');
-    } catch (error: any) {
-      Alert.alert('Registration Failed', error.message || 'Unable to create account');
-    }
-  };
-
-  return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-        >
-          <ScrollView contentContainerStyle={styles.authContainer}>
-            <View style={styles.authHeader}>
-              {/* <Text style={styles.authLogo}>🤖</Text> */}
-               <Image source={require('./src/assets/efsolit.png')} style={{height:60,width:60,borderRadius:25}}/>
-              <Text style={styles.authTitle}>Create Account</Text>
-              <Text style={styles.authSubtitle}>Get started with Efsolit AI</Text>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>👤</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Full Name"
-                  placeholderTextColor="#94A3B8"
-                  value={formData.name}
-                  onChangeText={(text) => setFormData({ ...formData, name: text })}
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🏢</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Company Name (Optional)"
-                  placeholderTextColor="#94A3B8"
-                  value={formData.company}
-                  onChangeText={(text) => setFormData({ ...formData, company: text })}
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>✉️</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email Address"
-                  placeholderTextColor="#94A3B8"
-                  value={formData.email}
-                  onChangeText={(text) => setFormData({ ...formData, email: text })}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🔒</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor="#94A3B8"
-                  value={formData.password}
-                  onChangeText={(text) => setFormData({ ...formData, password: text })}
-                
-                  secureTextEntry={!showPassword}
-                />
-                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                     {showPassword ? (
-    <Eye size={22} color="#666" />
-  ) : (
-    <EyeOff size={22} color="#666" />
-  )}
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🔐</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm Password"
-                  placeholderTextColor="#94A3B8"
-                  value={formData.confirmPassword}
-                  onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
-                secureTextEntry={!confirmPasswordVisible}
-                />
-                 <TouchableOpacity onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)} style={styles.eyeButton}>
-                                   {confirmPasswordVisible ? (
-    <Eye size={22} color="#666" />
-  ) : (
-    <EyeOff size={22} color="#666" />
-  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {error && <Text style={styles.errorText}>{error}</Text>}
-
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: '#4F46E5' }]}
-              onPress={handleRegister}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.buttonText}>Create Account</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.linkText}>
-                Already have an account? <Text style={styles.link}>Sign In</Text>
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
-  );
-};
 
 
 // ==================== NAVIGATION ====================
@@ -652,11 +235,6 @@ const AppNavigator = () => {
     <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-
-      <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
 <Stack.Screen name="WebView" component={WebViewScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
@@ -665,14 +243,14 @@ const AppNavigator = () => {
 // ==================== MAIN APP ====================
 const App = () => {
   return (
-    <Provider store={store}>
+ 
       <SafeAreaProvider>
         <NavigationContainer>
           <StatusBar barStyle="dark-content" backgroundColor="#4F46E5"/>
           <AppNavigator />
         </NavigationContainer>
       </SafeAreaProvider>
-    </Provider>
+
   );
 };
 
